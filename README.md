@@ -1,2 +1,2 @@
-\[pdf-merge](https://jspoh.dev/pdf-merge)
+\[pdf-merge](https://pdf-merge.jspoh.dev)
 

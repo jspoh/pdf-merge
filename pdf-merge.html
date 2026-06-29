@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Merger</title>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  :root { --accent: #4f46e5; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; background: #f3f4f6; color: #111827; padding: 20px;
+  }
+  .card {
+    background: #fff; padding: 32px; border-radius: 16px; width: 100%;
+    max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  p.sub { margin: 0 0 24px; color: #6b7280; font-size: 14px; }
+  .drop {
+    display: block; width: 100%;
+    border: 2px dashed #d1d5db; border-radius: 12px; padding: 18px;
+    margin-bottom: 14px; cursor: pointer; transition: .15s; text-align: center;
+  }
+  .drop:hover, .drop.dragover { border-color: var(--accent); background: #f5f5ff; }
+  .drop .label { font-weight: 600; font-size: 14px; }
+  .drop .file { margin-top: 6px; font-size: 13px; color: var(--accent); word-break: break-all; }
+  .drop .hint { margin-top: 6px; font-size: 12px; color: #9ca3af; }
+  input[type=file] { display: none; }
+  button {
+    width: 100%; padding: 13px; border: 0; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+    margin-top: 10px; transition: .15s;
+  }
+  button:disabled { background: #c7c9d9; cursor: not-allowed; }
+  button:not(:disabled):hover { background: #4338ca; }
+  .status { margin-top: 14px; font-size: 13px; text-align: center; min-height: 18px; }
+  .status.err { color: #dc2626; }
+  .status.ok { color: #16a34a; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Merge PDFs</h1>
+    <p class="sub">Select two PDF files. They're merged right here in your browser — nothing is uploaded.</p>
+
+    <label class="drop" id="drop1" for="file1">
+      <div class="label">📄 First PDF</div>
+      <div class="file" id="name1"></div>
+      <div class="hint">Click or drop a file</div>
+    </label>
+    <input type="file" id="file1" accept="application/pdf,.pdf">
+
+    <label class="drop" id="drop2" for="file2">
+      <div class="label">📄 Second PDF</div>
+      <div class="file" id="name2"></div>
+      <div class="hint">Click or drop a file</div>
+    </label>
+    <input type="file" id="file2" accept="application/pdf,.pdf">
+
+    <button id="merge" disabled>Merge &amp; Download</button>
+    <div class="status" id="status"></div>
+  </div>
+
+<script>
+  const { PDFDocument } = PDFLib;
+  const files = [null, null];
+
+  function wire(idx) {
+    const input = document.getElementById('file' + (idx + 1));
+    const drop  = document.getElementById('drop' + (idx + 1));
+    const name  = document.getElementById('name' + (idx + 1));
+
+    input.addEventListener('change', () => setFile(idx, input.files[0], name));
+
+    ['dragenter', 'dragover'].forEach(e =>
+      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(e =>
+      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('dragover'); }));
+    drop.addEventListener('drop', ev => {
+      const f = ev.dataTransfer.files[0];
+      if (f) setFile(idx, f, name);
+    });
+  }
+
+  function setFile(idx, file, nameEl) {
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setStatus('Please choose a PDF file.', 'err');
+      return;
+    }
+    files[idx] = file;
+    nameEl.textContent = file.name;
+    setStatus('');
+    document.getElementById('merge').disabled = !(files[0] && files[1]);
+  }
+
+  function setStatus(msg, cls) {
+    const s = document.getElementById('status');
+    s.textContent = msg;
+    s.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  document.getElementById('merge').addEventListener('click', async () => {
+    const btn = document.getElementById('merge');
+    btn.disabled = true;
+    setStatus('Merging…');
+    try {
+      const merged = await PDFDocument.create();
+      for (const file of files) {
+        const bytes = await file.arrayBuffer();
+        const doc = await PDFDocument.load(bytes);
+        const pages = await merged.copyPages(doc, doc.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
+      const out = await merged.save();
+      const blob = new Blob([out], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'merged.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('Done! Your download should start automatically.', 'ok');
+    } catch (err) {
+      console.error(err);
+      setStatus('Could not merge: ' + err.message, 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  wire(0);
+  wire(1);
+</script>
+</body>
+</html>

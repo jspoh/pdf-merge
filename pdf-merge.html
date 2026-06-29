@@ -44,21 +44,9 @@
 <body>
   <div class="card">
     <h1>Merge PDFs</h1>
-    <p class="sub">Select two PDF files. They're merged right here in your browser — nothing is uploaded.</p>
+    <p class="sub">Select your PDF files in order. They're merged right here in your browser — nothing is uploaded.</p>
 
-    <label class="drop" id="drop1" for="file1">
-      <div class="label">📄 First PDF</div>
-      <div class="file" id="name1"></div>
-      <div class="hint">Click or drop a file</div>
-    </label>
-    <input type="file" id="file1" accept="application/pdf,.pdf">
-
-    <label class="drop" id="drop2" for="file2">
-      <div class="label">📄 Second PDF</div>
-      <div class="file" id="name2"></div>
-      <div class="hint">Click or drop a file</div>
-    </label>
-    <input type="file" id="file2" accept="application/pdf,.pdf">
+    <div id="slots"></div>
 
     <button id="merge" disabled>Merge &amp; Download</button>
     <div class="status" id="status"></div>
@@ -66,23 +54,47 @@
 
 <script>
   const { PDFDocument } = PDFLib;
-  const files = [null, null];
+  const files = [];               // files[i] holds the File for slot i (or null)
+  const slotsEl = document.getElementById('slots');
+  const ORDINALS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth',
+                    'Seventh', 'Eighth', 'Ninth', 'Tenth'];
 
-  function wire(idx) {
-    const input = document.getElementById('file' + (idx + 1));
-    const drop  = document.getElementById('drop' + (idx + 1));
-    const name  = document.getElementById('name' + (idx + 1));
+  function ordinal(idx) {
+    return ORDINALS[idx] || (idx + 1) + 'th';
+  }
 
-    input.addEventListener('change', () => setFile(idx, input.files[0], name));
+  function addSlot() {
+    const idx = files.length;
+    files.push(null);
+
+    const label = document.createElement('label');
+    label.className = 'drop';
+    label.htmlFor = 'file' + idx;
+    label.innerHTML =
+      '<div class="label">📄 ' + ordinal(idx) + ' PDF</div>' +
+      '<div class="file"></div>' +
+      '<div class="hint">Click or drop a file</div>';
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'file' + idx;
+    input.accept = 'application/pdf,.pdf';
+
+    const nameEl = label.querySelector('.file');
+
+    input.addEventListener('change', () => setFile(idx, input.files[0], nameEl));
 
     ['dragenter', 'dragover'].forEach(e =>
-      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('dragover'); }));
+      label.addEventListener(e, ev => { ev.preventDefault(); label.classList.add('dragover'); }));
     ['dragleave', 'drop'].forEach(e =>
-      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('dragover'); }));
-    drop.addEventListener('drop', ev => {
+      label.addEventListener(e, ev => { ev.preventDefault(); label.classList.remove('dragover'); }));
+    label.addEventListener('drop', ev => {
       const f = ev.dataTransfer.files[0];
-      if (f) setFile(idx, f, name);
+      if (f) setFile(idx, f, nameEl);
     });
+
+    slotsEl.appendChild(label);
+    slotsEl.appendChild(input);
   }
 
   function setFile(idx, file, nameEl) {
@@ -91,10 +103,20 @@
       setStatus('Please choose a PDF file.', 'err');
       return;
     }
+    const wasEmpty = !files[idx];
     files[idx] = file;
     nameEl.textContent = file.name;
     setStatus('');
-    document.getElementById('merge').disabled = !(files[0] && files[1]);
+
+    // When the last slot gets filled, reveal a fresh empty one.
+    if (wasEmpty && idx === files.length - 1) addSlot();
+
+    updateMergeState();
+  }
+
+  function updateMergeState() {
+    const count = files.filter(Boolean).length;
+    document.getElementById('merge').disabled = count < 2;
   }
 
   function setStatus(msg, cls) {
@@ -110,6 +132,7 @@
     try {
       const merged = await PDFDocument.create();
       for (const file of files) {
+        if (!file) continue;
         const bytes = await file.arrayBuffer();
         const doc = await PDFDocument.load(bytes);
         const pages = await merged.copyPages(doc, doc.getPageIndices());
@@ -132,8 +155,8 @@
     }
   });
 
-  wire(0);
-  wire(1);
+  addSlot();
+  addSlot();
 </script>
 </body>
 </html>

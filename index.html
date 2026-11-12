@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Tools</title>
+<style>
+  :root { --accent: #4f46e5; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; background: #f3f4f6; color: #111827; padding: 20px;
+  }
+  .wrap { width: 100%; max-width: 560px; }
+  h1 { margin: 0 0 4px; font-size: 26px; text-align: center; }
+  p.sub { margin: 0 0 24px; color: #6b7280; font-size: 14px; text-align: center; }
+  .tools { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 480px) { .tools { grid-template-columns: 1fr; } }
+  a.tool {
+    display: block; background: #fff; padding: 28px 20px; border-radius: 16px;
+    text-decoration: none; color: inherit; text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08); border: 2px solid transparent; transition: .15s;
+  }
+  a.tool:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .icon { font-size: 36px; }
+  .name { font-weight: 600; font-size: 17px; margin-top: 8px; }
+  .desc { font-size: 13px; color: #6b7280; margin-top: 6px; }
+  .note { margin-top: 20px; font-size: 12px; color: #9ca3af; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PDF Tools</h1>
+    <p class="sub">Free, private, and entirely in your browser.</p>
+    <div class="tools">
+      <a class="tool" href="pdf-merge.html">
+        <div class="icon">📄</div>
+        <div class="name">Merge PDFs</div>
+        <div class="desc">Combine multiple PDFs into one file.</div>
+      </a>
+      <a class="tool" href="image-to-pdf.html">
+        <div class="icon">🖼️</div>
+        <div class="name">Image to PDF</div>
+        <div class="desc">Turn PNG, JPG and other images into a PDF.</div>
+      </a>
+    </div>
+    <div class="note">Your files never leave your device — nothing is uploaded.</div>
+  </div>
+</body>
+</html>
